@@ -7,7 +7,10 @@ from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
 import random
 import os
-import importlib
+
+from importlib import reload
+from utils import random_snap_utils
+reload(random_snap_utils)
 
 class Windowui(QMainWindow):
     """
@@ -18,8 +21,7 @@ class Windowui(QMainWindow):
             Create main window UI and link with class function MinandMaxValues.
                 *args = get non keyword arguments
                 **kwargs = get keyword arguments 
-            Return 
-                show all label, min and max values from rotation and scale to set values 0 or 1.
+
         """
         super(Windowui, self).__init__(*args, **kwargs)
         self.resize(450, 150)
@@ -33,6 +35,10 @@ class Windowui(QMainWindow):
 
         self.getVertex()
         self.main_layout.addWidget(self.getVertex_widget)
+
+        self.getObjectToSnap()
+        self.main_layout.addWidget(self.snapObject_widget)
+
         
         self.snap_label = QLabel('Snap with vertex:')
         self.snap_input = QLineEdit()
@@ -67,6 +73,9 @@ class Windowui(QMainWindow):
         self.rotatez_main_initDisplay_max = MinandMaxValues(value_type='Max', minValueRange=0, initvalue=0)
         self.main_layout.addWidget(self.rotatez_main_initDisplay_min)
         self.main_layout.addWidget(self.rotatez_main_initDisplay_max)
+
+        # Add a line separator between rotation and scale
+        self.main_layout.addWidget(QFrame(frameShape=QFrame.HLine, frameShadow=QFrame.Sunken))
         
         self.main_layout.addWidget(self.scalex_label)
         self.scalex_main_initDisplay_min = MinandMaxValues(value_type='Min', minValueRange=0, initvalue=1)
@@ -100,7 +109,7 @@ class Windowui(QMainWindow):
         self.getVertex_layout = QHBoxLayout()
         self.getVertex_widget.setLayout(self.getVertex_layout)
 
-        self.getVertex_label = QLabel('Name Object: ')
+        self.getVertex_label = QLabel('Object Placement: ')
         self.getVertex_lineEdit = QLineEdit()
         self.getVertex_button = QPushButton('Get')
 
@@ -110,12 +119,36 @@ class Windowui(QMainWindow):
         self.getVertex_layout.addWidget(self.getVertex_lineEdit)
         self.getVertex_layout.addWidget(self.getVertex_button)
 
+    def getObjectToSnap(self):
+        """
+            Create UI elements for selecting object to snap.
+        """
+        self.snapObject_widget = QWidget()
+        self.snapObject_layout = QHBoxLayout()
+        self.snapObject_widget.setLayout(self.snapObject_layout)
+
+        self.snapObject_label = QLabel('Object to Snap: ')
+        self.snapObject_lineEdit = QLineEdit()
+        self.snapObject_button = QPushButton('Select')
+
+        self.snapObject_button.clicked.connect(self.selectObjectToSnap)
+
+        self.snapObject_layout.addWidget(self.snapObject_label)
+        self.snapObject_layout.addWidget(self.snapObject_lineEdit)
+        self.snapObject_layout.addWidget(self.snapObject_button)
+
+        self.main_layout.addWidget(self.snapObject_widget)
+
+    def selectObjectToSnap(self):
+        """
+            Select an object to snap and display its name.
+        """
+        selected_object = cmds.ls(sl=True)[0]
+        self.snapObject_lineEdit.setText(selected_object)
+
     def generate_objects(self, *args):
         """
-            Return value rotation and scale X Y Z to spinbox and input name to build, return trn = terrain to LineEidt.
-                link placement with class ObjectPlacementOnTerrain for show min and max values.
-                Return
-                    values of min and max to spinbox and slider from ratation XYZ also scale XYZ. then create name object.
+        Generate objects to snap to terrain vertices.
         """
         # Retrieve rotation values from spin boxes
         minrotation_values = [
@@ -147,16 +180,17 @@ class Windowui(QMainWindow):
         # Retrieve vertex and terrain information
         name = 'build'
         trn = self.getVertex_lineEdit.text()
+        object_to_snap =self.snapObject_lineEdit.text()
 
         # Create an instance of ObjectPlacementOnTerrain and place objects
-        placement = ObjectPlacementOnTerrain(name, trn)
-        placement.place_objects(minrotation_values, maxrotation_values, scale_min_values, scale_max_values, snap_value)
+        placement = random_snap_utils.ObjectPlacementOnTerrain(name, trn)
+        placement.place_objects(minrotation_values, maxrotation_values, scale_min_values, scale_max_values, snap_value, object_to_snap)
+
 
     def getbutton_object(self, *args):
         """
             Select the object and show name object
-            Return
-                return name of object from the selected.
+
         """
         sel = cmds.ls(sl=True)[0]
         self.getVertex_lineEdit.setText(sel)
@@ -175,8 +209,6 @@ class MinandMaxValues(QWidget):
             minValueRange=0.0 is the minimum value range for the value being initialized.
             initvalue=0.0 is represents the initial value to be set. If no value is provided, 0.0 will be used.
 
-            Return
-                connected min and max values spinbox and slider.
         """
         super(MinandMaxValues, self).__init__()
 
