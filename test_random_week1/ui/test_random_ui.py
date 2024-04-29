@@ -18,10 +18,9 @@ class Windowui(QMainWindow):
     """
     def __init__(self, *args, **kwargs):
         """
-            Create main window UI and link with class function MinandMaxValues.
-                *args = get non keyword arguments
-                **kwargs = get keyword arguments 
-
+        Create main window UI and link with class function MinandMaxValues.
+        *args = get non keyword arguments
+        **kwargs = get keyword arguments 
         """
         super(Windowui, self).__init__(*args, **kwargs)
         self.resize(450, 150)
@@ -41,10 +40,10 @@ class Windowui(QMainWindow):
 
         
         self.snap_label = QLabel('Snap with vertex:')
-        self.snap_input = QLineEdit()
+        self.snap_spinbox = QSpinBox()
 
         self.main_layout.addWidget(self.snap_label)
-        self.main_layout.addWidget(self.snap_input)
+        self.main_layout.addWidget(self.snap_spinbox)
         
         self.rotatex_label = QLabel('Rotate X:')
         self.rotatey_label = QLabel('Rotate Y:')
@@ -174,17 +173,18 @@ class Windowui(QMainWindow):
             self.scalez_main_initDisplay_max.minandmaxValues_spinbox.value()
         ]
         
-        # Retrieve snap value from line edit
-        snap_value = int(self.snap_input.text()) if self.snap_input.text() else None
+        # Retrieve snap value from spinbox
+        snap_value = int(self.snap_spinbox.text()) if self.snap_spinbox.text() else None
 
         # Retrieve vertex and terrain information
         name = 'build'
         trn = self.getVertex_lineEdit.text()
-        object_to_snap =self.snapObject_lineEdit.text()
+        object_to_snap = self.snapObject_lineEdit.text()
 
         # Create an instance of ObjectPlacementOnTerrain and place objects
         placement = random_snap_utils.ObjectPlacementOnTerrain(name, trn)
         placement.place_objects(minrotation_values, maxrotation_values, scale_min_values, scale_max_values, snap_value, object_to_snap)
+
 
 
     def getbutton_object(self, *args):
@@ -194,6 +194,8 @@ class Windowui(QMainWindow):
         """
         sel = cmds.ls(sl=True)[0]
         self.getVertex_lineEdit.setText(sel)
+        vertex_count = cmds.polyEvaluate(self.getVertex_lineEdit.text(), v=True)
+        self.snap_spinbox.setMaximum(vertex_count)
         
 
 class MinandMaxValues(QWidget):
